@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+<<<<<<< HEAD
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
@@ -285,3 +286,9 @@ Route::post('/register', function (Request $request) {
 Route::get('/orders', function () {
     return view('orders');
 });
+=======
+
+Route::get('/', function () {
+    return view('welcome');
+});
+>>>>>>> 267fda9f420b6d201665f248d3888a649f1b340f

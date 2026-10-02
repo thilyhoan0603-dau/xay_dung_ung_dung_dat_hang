@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<<<<<<< HEAD
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
@@ -274,4 +275,14 @@
             <div class="h-14.5 hidden lg:block"></div>
         @endif
     </body>
+=======
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>CNPM - DAU</title>
+</head>
+<body>
+    <h1>Chào bạn khóa 24CT đến với học phần CNPM- DAU</h1>
+</body>
+>>>>>>> 267fda9f420b6d201665f248d3888a649f1b340f
 </html>
