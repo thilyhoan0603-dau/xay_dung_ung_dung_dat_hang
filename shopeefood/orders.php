@@ -1,0 +1,5 @@
+<?php
+require_once "config/database.php"; require_once "config/auth.php"; require_login();
+$uid=current_user()['id'];$stmt=$conn->prepare("SELECT o.*,r.name restaurant_name FROM orders o JOIN restaurants r ON r.id=o.restaurant_id WHERE o.customer_id=? ORDER BY o.id DESC");$stmt->bind_param("i",$uid);$stmt->execute();$orders=$stmt->get_result();
+?>
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Đơn hàng</title><link rel="stylesheet" href="assets/css/style.css"></head><body><main class="container"><div class="between"><h1>📦 Đơn hàng của tôi</h1><a class="btn secondary" href="index.php">Trang chủ</a></div><div class="card"><table class="table"><tr><th>Mã đơn</th><th>Nhà hàng</th><th>Tổng</th><th>Trạng thái</th><th></th></tr><?php while($o=$orders->fetch_assoc()):?><tr><td><?=$o['order_code']?></td><td><?=htmlspecialchars($o['restaurant_name'])?></td><td><?=money($o['total'])?></td><td><span class="badge"><?=status_text($o['status'])?></span></td><td><a class="btn secondary" href="order_detail.php?id=<?=$o['id']?>">Chi tiết</a></td></tr><?php endwhile;?></table></div></main></body></html>
