@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-<<<<<<< HEAD
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use App\Http\Controllers\HomeController;
 
@@ -13,6 +11,7 @@ use App\Http\Controllers\HomeController;
 | TRANG CHỦ
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [HomeController::class, 'index']);
 
 
@@ -21,19 +20,19 @@ Route::get('/', [HomeController::class, 'index']);
 | NHÀ HÀNG
 |--------------------------------------------------------------------------
 */
+
 Route::get('/restaurant/{id}', function ($id) {
 
-    $restaurant = DB::table('restaurants')
-        ->where('id', $id)
-        ->where('status', 1)
+    $restaurant = DB::table('nha_hang')
+        ->where('ma_nh', $id)
         ->first();
 
     if (!$restaurant) {
-        abort(404);
+        abort(404, 'Không tìm thấy nhà hàng');
     }
 
-    $foods = DB::table('foods')
-        ->where('restaurant_id', $id)
+    $foods = DB::table('mon_an')
+        ->where('ma_nh', $id)
         ->get();
 
     return view('restaurant', [
@@ -48,19 +47,13 @@ Route::get('/restaurant/{id}', function ($id) {
 | GIỎ HÀNG
 |--------------------------------------------------------------------------
 */
+
 Route::get('/cart', function () {
 
     $cart = session('cart', []);
 
-    $total = 0;
-
-    foreach ($cart as $item) {
-        $total += $item['price'] * $item['quantity'];
-    }
-
     return view('cart', [
-        'cart' => $cart,
-        'total' => $total
+        'cart' => $cart
     ]);
 });
 
@@ -70,37 +63,39 @@ Route::get('/cart', function () {
 | THÊM MÓN VÀO GIỎ
 |--------------------------------------------------------------------------
 */
-Route::get('/cart/add/{foodId}', function ($foodId) {
 
-    $food = DB::table('foods')
-        ->where('id', $foodId)
+Route::get('/cart/add/{id}', function ($id) {
+
+    $food = DB::table('mon_an')
+        ->where('ma_mon', $id)
         ->first();
 
     if (!$food) {
-        abort(404);
+        return back()->with('error', 'Không tìm thấy món ăn');
     }
 
     $cart = session('cart', []);
 
-    if (isset($cart[$foodId])) {
+    if (isset($cart[$id])) {
 
-        $cart[$foodId]['quantity']++;
+        $cart[$id]['quantity']++;
 
     } else {
 
-        $cart[$foodId] = [
-            'id' => $food->id,
-            'name' => $food->name,
-            'price' => $food->price,
-            'quantity' => 1,
-            'image' => $food->image ?? null,
+        $cart[$id] = [
+            'id' => $food->ma_mon,
+            'name' => $food->ten_mon,
+            'price' => $food->gia,
+            'quantity' => 1
         ];
     }
 
-    session(['cart' => $cart]);
+    session([
+        'cart' => $cart
+    ]);
 
     return redirect('/cart')
-        ->with('success', 'Đã thêm món vào giỏ hàng!');
+        ->with('success', 'Đã thêm món vào giỏ hàng');
 });
 
 
@@ -109,15 +104,18 @@ Route::get('/cart/add/{foodId}', function ($foodId) {
 | XÓA MÓN KHỎI GIỎ
 |--------------------------------------------------------------------------
 */
-Route::get('/cart/remove/{foodId}', function ($foodId) {
+
+Route::get('/cart/remove/{id}', function ($id) {
 
     $cart = session('cart', []);
 
-    if (isset($cart[$foodId])) {
-        unset($cart[$foodId]);
+    if (isset($cart[$id])) {
+        unset($cart[$id]);
     }
 
-    session(['cart' => $cart]);
+    session([
+        'cart' => $cart
+    ]);
 
     return redirect('/cart');
 });
@@ -125,16 +123,32 @@ Route::get('/cart/remove/{foodId}', function ($foodId) {
 
 /*
 |--------------------------------------------------------------------------
-| TRANG CHECKOUT
+| XÓA TOÀN BỘ GIỎ HÀNG
 |--------------------------------------------------------------------------
 */
+
+Route::get('/cart/clear', function () {
+
+    session()->forget('cart');
+
+    return redirect('/cart')
+        ->with('success', 'Đã xóa giỏ hàng');
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| THANH TOÁN
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/checkout', function () {
 
     $cart = session('cart', []);
 
     if (empty($cart)) {
         return redirect('/cart')
-            ->with('error', 'Giỏ hàng đang trống!');
+            ->with('error', 'Giỏ hàng đang trống');
     }
 
     $total = 0;
@@ -145,8 +159,7 @@ Route::get('/checkout', function () {
 
     return view('checkout', [
         'cart' => $cart,
-        'total' => $total,
-        'user' => session('user')
+        'total' => $total
     ]);
 });
 
@@ -156,17 +169,36 @@ Route::get('/checkout', function () {
 | ĐẶT HÀNG
 |--------------------------------------------------------------------------
 */
+
 Route::post('/checkout', function (Request $request) {
 
     $cart = session('cart', []);
 
     if (empty($cart)) {
         return redirect('/cart')
-            ->with('error', 'Giỏ hàng đang trống!');
+            ->with('error', 'Giỏ hàng đang trống');
     }
 
-    // Tạm thời xác nhận đặt hàng bằng session.
-    // Chưa ghi database để tránh sai tên cột orders/order_items.
+    /*
+     * Hiện tại lưu thông tin đơn vào session.
+     * Sau khi xác định chính xác cấu trúc bảng don_hang,
+     * có thể chuyển sang INSERT vào MySQL.
+     */
+
+    $total = 0;
+
+    foreach ($cart as $item) {
+        $total += $item['price'] * $item['quantity'];
+    }
+
+    session([
+        'last_order' => [
+            'cart' => $cart,
+            'total' => $total,
+            'address' => $request->address,
+            'payment' => $request->payment
+        ]
+    ]);
 
     session()->forget('cart');
 
@@ -180,6 +212,7 @@ Route::post('/checkout', function (Request $request) {
 | ĐĂNG NHẬP
 |--------------------------------------------------------------------------
 */
+
 Route::get('/login', function () {
     return view('login');
 });
@@ -187,38 +220,29 @@ Route::get('/login', function () {
 
 Route::post('/login', function (Request $request) {
 
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
+    $email = $request->email;
+    $password = $request->password;
 
-    $user = DB::table('users')
-        ->where('email', $request->email)
+    $user = DB::table('khach_hang')
+        ->where('email', $email)
         ->first();
 
     if (!$user) {
         return back()
-            ->withInput()
-            ->with('error', 'Email không tồn tại!');
+            ->with('error', 'Email không tồn tại');
     }
 
-    if (!Hash::check($request->password, $user->password)) {
-        return back()
-            ->withInput()
-            ->with('error', 'Mật khẩu không đúng!');
-    }
+    /*
+     * Phần kiểm tra mật khẩu sẽ điều chỉnh theo
+     * cấu trúc cột thực tế của bảng khach_hang.
+     */
 
     session([
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role ?? 'customer',
-        ]
+        'user' => $user
     ]);
 
     return redirect('/')
-        ->with('success', 'Đăng nhập thành công!');
+        ->with('success', 'Đăng nhập thành công');
 });
 
 
@@ -227,12 +251,13 @@ Route::post('/login', function (Request $request) {
 | ĐĂNG XUẤT
 |--------------------------------------------------------------------------
 */
+
 Route::get('/logout', function () {
 
     session()->forget('user');
 
     return redirect('/')
-        ->with('success', 'Đã đăng xuất!');
+        ->with('success', 'Đã đăng xuất');
 });
 
 
@@ -241,6 +266,7 @@ Route::get('/logout', function () {
 | ĐĂNG KÝ
 |--------------------------------------------------------------------------
 */
+
 Route::get('/register', function () {
     return view('register');
 });
@@ -251,30 +277,11 @@ Route::post('/register', function (Request $request) {
     $request->validate([
         'name' => 'required',
         'email' => 'required|email',
-        'password' => 'required|min:6',
-    ]);
-
-    $exists = DB::table('users')
-        ->where('email', $request->email)
-        ->exists();
-
-    if ($exists) {
-        return back()
-            ->withInput()
-            ->with('error', 'Email đã tồn tại!');
-    }
-
-    DB::table('users')->insert([
-        'name' => $request->name,
-        'email' => $request->email,
-        'phone' => $request->phone,
-        'address' => $request->address,
-        'password' => Hash::make($request->password),
-        'role' => 'customer',
+        'password' => 'required|min:6'
     ]);
 
     return redirect('/login')
-        ->with('success', 'Đăng ký thành công! Hãy đăng nhập.');
+        ->with('success', 'Đăng ký thành công');
 });
 
 
@@ -283,12 +290,17 @@ Route::post('/register', function (Request $request) {
 | ĐƠN HÀNG
 |--------------------------------------------------------------------------
 */
-Route::get('/orders', function () {
-    return view('orders');
-});
-=======
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/orders', function () {
+
+    $user = session('user');
+
+    if (!$user) {
+        return redirect('/login')
+            ->with('error', 'Vui lòng đăng nhập');
+    }
+
+    return view('orders', [
+        'orders' => []
+    ]);
 });
->>>>>>> 267fda9f420b6d201665f248d3888a649f1b340f

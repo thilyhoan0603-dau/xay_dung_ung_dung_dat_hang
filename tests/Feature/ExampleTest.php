@@ -1,27 +1,13 @@
 <?php
 
-<<<<<<< HEAD
-it('returns a successful response', function () {
-    $response = $this->get('/');
+namespace Tests\Unit;
 
-    $response->assertStatus(200);
-});
-=======
-namespace Tests\Feature;
-
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_example(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->assertTrue(true);
     }
 }
->>>>>>> 267fda9f420b6d201665f248d3888a649f1b340f

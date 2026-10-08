@@ -299,7 +299,7 @@
 
                         <a
                             class="btn"
-                            href="{{ url('/restaurant/' . $restaurant->id) }}"
+                            href="{{ url('/restaurant/' . $restaurant->restaurant_id) }}"
                         >
                             Xem nhà hàng
                         </a>
